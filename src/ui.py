@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 from datetime import date, datetime, timedelta
 from typing import Dict
@@ -138,6 +138,31 @@ class DesktopWidget(QMainWindow, DatePicker):
             'P': f'p-{mode}.ico',
             'next': f'next-{mode}.ico'
         }
+
+        for name, path in btn_icons.items():
+            button = QPushButton()
+            button.setObjectName(name)
+            button.setIcon(QIcon(self._handle_icon_path(path)))
+            button.setFixedSize(36, 36)
+
+            icon_size = button.size() * 0.7
+            button.setIconSize(QSize(icon_size.width(), icon_size.height()))
+            button.setCursor(Qt.PointingHandCursor)
+            button.setStyleSheet("""
+            QPushButton {
+                border: 1px solid rgb(192, 192, 192);
+                border-radius: 12px;
+                background-color: white;
+            }
+            QPushButton:hover{
+                background-color: rgb(224, 224, 224);
+            }
+            """)
+
+            h2_layout.addWidget(button)
+            if name != 'next':
+                h2_layout.addStretch()
+        pass
 
         # - End. -
         main_layout.addLayout(h2_layout)
