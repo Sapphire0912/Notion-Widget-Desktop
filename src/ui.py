@@ -74,6 +74,7 @@ class DesktopWidget(QMainWindow, DatePicker):
                 'btn-bg-hover': 'rgb(104, 198, 104)'
             }
         }
+        self.date_label = QLabel('', self)  # 定義日期的初始狀態
 
         self._windows_setting()
         self.ui()
@@ -122,7 +123,16 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         _handle_btn_events(self): 處理按鈕功能觸發時，引導相應的處理函式
         '''
-        btn_object_name = self.sender()
+        # objectName 於 ui 中的 btn_setting 的 key
+        btn_object_name = self.sender().objectName()
+
+        if btn_object_name == 'previous':
+            self.previous_day()
+            self.date_label.setText(self.format_date())
+
+        if btn_object_name == 'next':
+            self.next_day()
+            self.date_label.setText(self.format_date())
 
         pass
 
@@ -176,7 +186,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         h1_layout = QHBoxLayout()
 
         # 1. 顯示當前日期
-        date_label = QLabel(self.format_date(), self)
+        self.date_label = QLabel(self.format_date(), self)
 
         # 2. Dark Mode Button
         darkbtn = QPushButton()
@@ -199,7 +209,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         ''')
         darkbtn.clicked.connect(self._switch_bg_mode)
 
-        h1_layout.addWidget(date_label)
+        h1_layout.addWidget(self.date_label)
         h1_layout.addWidget(darkbtn)
         # - End. -
 
