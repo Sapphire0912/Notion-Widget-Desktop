@@ -52,6 +52,22 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         # UI 的相關屬性
         self.dark: bool = False  # 當前背景是 Dark 還是 Bright
+        self.windows_style: Dict = {
+            'bright': {
+                'window-bg': '',
+                'text-color': 'black',
+                'btn-border': 'rgb(192, 192, 192)',
+                'btn-bg-color': 'white',
+                'btn-bg-hover': 'rgb(224, 224, 224)'
+            },
+            'dark': {
+                'window-bg': 'rgb(64, 64, 64)',
+                'text-color': 'white',
+                'btn-border': 'rgb(192, 192, 192)',
+                'btn-bg-color': '',
+                'btn-bg-hover': 'rgb(104, 198, 104)'
+            }
+        }
 
         self._windows_setting()
         self.ui()
@@ -63,11 +79,22 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         self.setObjectName("Notion-Widget")
         self.setWindowTitle('Notion Widget')
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
         self.setWindowIcon(QIcon(self._handle_icon_path('task.ico')))
-
-        self.setFont(QFont('新細明體', 12))
         self.setFixedSize(320, 240)
+
+        styles: Dict = self.windows_style['dark'] if self.dark else self.windows_style['bright']
+        self.setStyleSheet(f"""
+            QMainWindow{{
+                background-color: {styles['window-bg']};
+            }}
+            QLabel {{
+                color: {styles['text-color']};
+                font-family: '新細明體';
+                font-size: 16px;
+            }}
+        """)
 
     def _handle_icon_path(self, filename: str) -> str:
         '''
@@ -76,10 +103,31 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         return os.path.join(os.path.dirname(__file__), f'../images/{filename}')
 
+    def _switch_bg_mode(self):
+        '''
+        _switch_bg_mode(self): 切換背景樣式，重新渲染 UI
+        '''
+        self.dark = not self.dark
+
+        self._windows_setting()
+        self.ui()
+
     def ui(self):
         '''
         ui(self): 設定視窗的基本功能元件
         '''
+
+        # 判斷 dark mode 狀態
+        if self.dark:
+            mode_icon_path: str = 'bright.ico'
+            styles: Dict = self.windows_style['dark']
+            btn_icon_mode: str = 'dark'
+
+        else:
+            mode_icon_path: str = 'dark.ico'
+            styles: Dict = self.windows_style['bright']
+            btn_icon_mode: str = 'bright'
+        # End.
 
         # -- 布局設定 --
         central_widget = QWidget()
@@ -95,20 +143,24 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         # 2. Dark Mode Button
         darkbtn = QPushButton()
-        darkbtn.setIcon(QIcon(self._handle_icon_path('dark.ico')))
+
+        darkbtn.setIcon(QIcon(self._handle_icon_path(mode_icon_path)))
+
         darkbtn.setFixedSize(36, 36)
         darkbtn.setIconSize(darkbtn.size())
         darkbtn.setCursor(Qt.PointingHandCursor)
-        darkbtn.setStyleSheet("""
-        QPushButton {
-            border: 1px solid rgb(192, 192, 192);
+
+        darkbtn.setStyleSheet(f'''
+        QPushButton {{
+            border: 1px solid {styles['btn-border']};
             border-radius: 16px;
-            background-color: white;
-        }
-        QPushButton:hover{
-            background-color: rgb(224, 224, 224);
-        }
-        """)
+            background-color: {styles['btn-bg-color']};
+        }}
+        QPushButton:hover{{
+            background-color: {styles['btn-bg-hover']};
+        }}
+        ''')
+        darkbtn.clicked.connect(self._switch_bg_mode)
 
         h1_layout.addWidget(date_label)
         h1_layout.addWidget(darkbtn)
@@ -127,16 +179,16 @@ class DesktopWidget(QMainWindow, DatePicker):
         main_layout.addLayout(v1_layout)
 
         # - 水平布局 2 - (按鈕區塊)
+        # 4. Button 區塊
         h2_layout = QHBoxLayout()
-        mode: str = 'dark' if self.dark else 'bright'
 
         btn_icons: Dict = {
-            'previous': f'previous-{mode}.ico',
-            'create': f'create-{mode}.ico',
-            'bullet-list': f'bullet-list-{mode}.ico',
-            'to-do': f'to-do-{mode}.ico',
-            'P': f'p-{mode}.ico',
-            'next': f'next-{mode}.ico'
+            'previous': f'previous-{btn_icon_mode}.ico',
+            'create': f'create-{btn_icon_mode}.ico',
+            'bullet-list': f'bullet-list-{btn_icon_mode}.ico',
+            'to-do': f'to-do-{btn_icon_mode}.ico',
+            'P': f'p-{btn_icon_mode}.ico',
+            'next': f'next-{btn_icon_mode}.ico'
         }
 
         for name, path in btn_icons.items():
@@ -148,15 +200,16 @@ class DesktopWidget(QMainWindow, DatePicker):
             icon_size = button.size() * 0.7
             button.setIconSize(QSize(icon_size.width(), icon_size.height()))
             button.setCursor(Qt.PointingHandCursor)
-            button.setStyleSheet("""
-            QPushButton {
-                border: 1px solid rgb(192, 192, 192);
+
+            button.setStyleSheet(f"""
+            QPushButton {{
+                border: 1px solid {styles['btn-border']};
                 border-radius: 12px;
-                background-color: white;
-            }
-            QPushButton:hover{
-                background-color: rgb(224, 224, 224);
-            }
+                background-color: {styles['btn-bg-color']};
+            }}
+            QPushButton:hover{{
+                background-color: {styles['btn-bg-hover']};
+            }}
             """)
 
             h2_layout.addWidget(button)
