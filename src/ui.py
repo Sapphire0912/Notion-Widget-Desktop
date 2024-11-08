@@ -26,24 +26,30 @@ class DatePicker(object):
         '''
         return self.current.strftime('%Y-%m-%d')
 
-    def previous_day(self) -> date:
+    def previous_day(self):
         '''
-        previous_day(self): 回傳昨天的日期, date
+        previous_day(self): 當前天數 - 1
         '''
         self.current -= timedelta(days=1)
-        return self.current
 
-    def next_day(self) -> date:
+    def next_day(self):
         '''
-        next_day(self): 回傳明天的日期, date
+        next_day(self): 當前天數 + 1
         '''
         self.current += timedelta(days=1)
-        return self.current
 
 
 class DesktopWidget(QMainWindow, DatePicker):
     """
     建立 Notion Widget 的 UI 介面
+
+    按鈕功能:
+    previous: 上一天
+    create:
+    bullet-list:
+    to-do:
+    P:
+    next: 下一天
     """
 
     def __init__(self):
@@ -112,6 +118,38 @@ class DesktopWidget(QMainWindow, DatePicker):
         self._windows_setting()
         self.ui()
 
+    def _handle_btn_events(self):
+        '''
+        _handle_btn_events(self): 處理按鈕功能觸發時，引導相應的處理函式
+        '''
+        btn_object_name = self.sender()
+
+        pass
+
+    def create_template(self):
+        '''
+        create_template(self): 創建模板按鈕觸發
+        '''
+        pass
+
+    def create_bullet_list(self):
+        '''
+        create_bullet_list(self): 創建 bullet_list 按鈕觸發
+        '''
+        pass
+
+    def create_to_do(self):
+        '''
+        create_to_do(self): 創建 to_do 按鈕觸發
+        '''
+        pass
+
+    def create_paragragh(self):
+        '''
+        create_paragragh(self): 創建 p 按鈕觸發
+        '''
+        pass
+
     def ui(self):
         '''
         ui(self): 設定視窗的基本功能元件
@@ -122,7 +160,6 @@ class DesktopWidget(QMainWindow, DatePicker):
             mode_icon_path: str = 'bright.ico'
             styles: Dict = self.windows_style['dark']
             btn_icon_mode: str = 'dark'
-
         else:
             mode_icon_path: str = 'dark.ico'
             styles: Dict = self.windows_style['bright']
@@ -182,16 +219,16 @@ class DesktopWidget(QMainWindow, DatePicker):
         # 4. Button 區塊
         h2_layout = QHBoxLayout()
 
-        btn_icons: Dict = {
+        btn_setting: Dict = {
             'previous': f'previous-{btn_icon_mode}.ico',
             'create': f'create-{btn_icon_mode}.ico',
             'bullet-list': f'bullet-list-{btn_icon_mode}.ico',
             'to-do': f'to-do-{btn_icon_mode}.ico',
             'P': f'p-{btn_icon_mode}.ico',
-            'next': f'next-{btn_icon_mode}.ico'
+            'next': f'next-{btn_icon_mode}.ico',
         }
 
-        for name, path in btn_icons.items():
+        for name, path in btn_setting.items():
             button = QPushButton()
             button.setObjectName(name)
             button.setIcon(QIcon(self._handle_icon_path(path)))
@@ -212,16 +249,16 @@ class DesktopWidget(QMainWindow, DatePicker):
             }}
             """)
 
+            button.clicked.connect(self._handle_btn_events)
             h2_layout.addWidget(button)
             if name != 'next':
                 h2_layout.addStretch()
-        pass
 
-        # - End. -
+            # - End. -
+
         main_layout.addLayout(h2_layout)
 
         central_widget.setLayout(main_layout)
-        pass
 
 
 if __name__ == '__main__':
