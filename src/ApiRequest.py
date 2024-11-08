@@ -45,7 +45,7 @@ class RequestNotionDatabase(object):
         return response.json()
 
 
-class PageObject(RequestNotionDatabase):
+class PageOperator(RequestNotionDatabase):
     def __init__(self, currentDate: str = None):
         super().__init__()
         # 僅 100 筆以內的資料
@@ -56,8 +56,7 @@ class PageObject(RequestNotionDatabase):
 
     def _analyze_pages(self) -> Dict:
         '''
-        _analyze_pages(self): 分析 page 的 json 資訊(例如: id, tags, status 等), 回傳 dict() 格式
-        -> 創建 page 模板需要的資訊 <-
+        _analyze_pages(self): 分析 page 的 json 資訊(例如: id, icon, parent 等), 回傳 dict() 格式
         '''
         pages_info = dict()
         for data in self.data:
@@ -66,15 +65,11 @@ class PageObject(RequestNotionDatabase):
             pages_info[task_date] = {
                 "page_id": data["id"],
                 "icon": data["icon"],
-                "parent": data["parent"],
+                "parent": data["parent"],  # database id
                 "properties": data["properties"],
             }
 
         return pages_info
-
-    def create_page_template(self):
-        '''創建 page 的模板'''
-        pass
 
     def get_page_json(self):
         '''
@@ -86,10 +81,6 @@ class PageObject(RequestNotionDatabase):
         # 僅 100 筆以內的資料
         response = requests.get(url=url, headers=self.header)
         return response.json()
-
-    def create_contents_template(self):
-        '''創建 contents 的模板'''
-        pass
 
     def get_page_contents(self) -> List[Dict]:
         '''
@@ -117,5 +108,5 @@ class PageObject(RequestNotionDatabase):
         return content_list
 
 
-page_obj = PageObject()
-print(page_obj.get_page_contents())
+# page_obj = PageOperator()
+# print(page_obj.get_page_contents())
