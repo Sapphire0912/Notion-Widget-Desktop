@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QLineEdit, QTextEdit
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 from datetime import date, datetime, timedelta
@@ -164,7 +164,6 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         ui(self): 設定視窗的基本功能元件
         '''
-
         # 判斷 dark mode 狀態
         if self.dark:
             mode_icon_path: str = 'bright.ico'
@@ -219,8 +218,62 @@ class DesktopWidget(QMainWindow, DatePicker):
         v1_layout = QVBoxLayout()
 
         # 3. Notion 內容區塊
-        section_label = QLabel('Content Section', self)
-        v1_layout.addWidget(section_label)
+        # UI 需要創建 QScrollArea()
+        # 模擬從 API 取得資料
+        list_test = [
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'to_do',
+             'checked': False, 'content_text': '製作 Notion widget Desktop 專案'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+             'type': 'to_do', 'checked': True, 'content_text': '重新修正兩份履歷未來規劃的內容'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+                'type': 'to_do', 'checked': False, 'content_text': '投 3 ~ 5 間公司履歷'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+             'type': 'paragraph', 'content_text': '⇒ 下一個是理財專案'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
+            {'parent': {'type': 'page_id',
+                        'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'paragraph'}
+        ]
+        # index 提供給 self.sender 接收具體是更改哪個元件
+        for index, data in enumerate(list_test):
+            if data['type'] == 'to_do':
+                to_do_layout = QHBoxLayout()
+                # 創建 QCheckBox & QLineEdit
+                checkbox = QCheckBox()
+                checkbox.setChecked(data['checked'])
+                checkbox.setObjectName(f'{index}-checkbox')
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-to_do-content')
+
+                to_do_layout.addWidget(checkbox)
+                to_do_layout.addWidget(content)
+                v1_layout.addLayout(to_do_layout)
+                pass
+
+            if data['type'] == 'paragraph':
+                # 創建 QTextEdit
+                if 'content_text' in data.keys():
+                    content = QTextEdit()
+                    content.setText(data['content_text'])
+                    content.setObjectName(f'{index}-paragraph-content')
+                    v1_layout.addWidget(content)
+                pass
+
+            if data['type'] == 'bulleted_list_item':
+                bulleted_list_layout = QHBoxLayout()
+                label = QLabel('•')
+                label.setObjectName(f'{index}-bulleted_list-label')
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-bulleted_list-content')
+
+                bulleted_list_layout.addWidget(label)
+                bulleted_list_layout.addWidget(content)
+                v1_layout.addLayout(bulleted_list_layout)
+                pass
         # - End. -
 
         main_layout.addLayout(v1_layout)
@@ -267,6 +320,7 @@ class DesktopWidget(QMainWindow, DatePicker):
             # - End. -
 
         main_layout.addLayout(h2_layout)
+        # - End. -
 
         central_widget.setLayout(main_layout)
 

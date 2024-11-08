@@ -108,5 +108,20 @@ class PageOperator(RequestNotionDatabase):
         return content_list
 
 
-# page_obj = PageOperator()
-# print(page_obj.get_page_contents())
+page_obj = PageOperator()
+print(page_obj.get_page_contents())
+
+# 11.08
+# [
+# {
+#   'parent': {
+#     'type': 'page_id',
+#     'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'
+#     },
+#   'type': 'to_do',
+#   'checked': False,
+#   'content_text': '製作 Notion widget Desktop 專案 (預計 3 ~ 5 天內完成)'
+# },
+# {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'to_do', 'checked': True, 'content_text': '重新修正兩份履歷未來規劃的內容（短：3個月, 中：3個月~2年, 長：2年+）'}, {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'to_do', 'checked': False, 'content_text': '
+# 投 3 ~ 5 間公司履歷'}, {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'paragraph', 'content_text': '⇒ 下一份是理財專案'}, {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'bulleted_list_item', 'content_text': '別急著投履歷，先完成幾個
+# 作品後再投'}, {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'paragraph'}]
