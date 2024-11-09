@@ -41,6 +41,7 @@ class DatePicker(object):
 
 class DesktopWidget(QMainWindow, DatePicker):
     """
+    DesktopWidget(QMainWindow, DatePicker):
     建立 Notion Widget 的 UI 介面
 
     按鈕功能:
@@ -137,10 +138,10 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         pass
 
+    def _update_content_section(self):
         '''
-        create_paragragh(self): 創建 p 按鈕觸發
+        _update_content_section(self): 更新內容文字區塊的元件
         '''
-        pass
 
     def ui(self):
         '''
@@ -199,7 +200,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         # - 垂直布局 1 - (內容區塊)
         v1_layout = QVBoxLayout()
 
-        # 3. Notion 內容區塊
+        # 3. Notion 內容區塊 (需要動態調整的)
         # UI 需要創建 QScrollArea()
         # 模擬從 API 取得資料
         list_test = [
@@ -227,17 +228,28 @@ class DesktopWidget(QMainWindow, DatePicker):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-to_do-content')
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
 
                 to_do_layout.addWidget(checkbox)
                 to_do_layout.addWidget(content)
                 v1_layout.addLayout(to_do_layout)
-                pass
 
             if data['type'] == 'paragraph':
                 if 'content_text' in data.keys():
                     content = QTextEdit()
                     content.setText(data['content_text'])
                     content.setObjectName(f'{index}-paragraph-content')
+                    content.setStyleSheet("""
+                    QTextEdit {
+                        background-color: rgba(255, 255, 255, 0);
+                        border: none;
+                    }
+                    """)
                     v1_layout.addWidget(content)
                 pass
 
@@ -249,6 +261,12 @@ class DesktopWidget(QMainWindow, DatePicker):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-bulleted_list-content')
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
 
                 bulleted_list_layout.addWidget(label)
                 bulleted_list_layout.addWidget(content)
@@ -263,20 +281,21 @@ class DesktopWidget(QMainWindow, DatePicker):
         h2_layout = QHBoxLayout()
 
         btn_setting: Dict = {
-            'previous': f'previous-{btn_icon_mode}.ico',
-            'update': f'update-{btn_icon_mode}.ico',
-            'submit': f'submit-{btn_icon_mode}.ico',
-            'bullet-list': f'bullet-list-{btn_icon_mode}.ico',
-            'to-do': f'to-do-{btn_icon_mode}.ico',
-            'P': f'p-{btn_icon_mode}.ico',
-            'next': f'next-{btn_icon_mode}.ico',
+            'previous': {"path": f'previous-{btn_icon_mode}.ico', 'tooltip': '上一天'},
+            'update': {"path": f'update-{btn_icon_mode}.ico', 'tooltip': '將 Notion 資料同步到此'},
+            'submit': {"path": f'submit-{btn_icon_mode}.ico', 'tooltip': '將資料同步到 Notion'},
+            'bullet-list': {"path": f'bullet-list-{btn_icon_mode}.ico', 'tooltip': '創建 Bullet-List'},
+            'to-do': {"path": f'to-do-{btn_icon_mode}.ico', 'tooltip': '創建 To-do'},
+            'P': {"path": f'P-{btn_icon_mode}.ico', 'tooltip': '創建 Paragraph'},
+            'next': {"path": f'next-{btn_icon_mode}.ico', 'tooltip': '下一天'},
         }
 
-        for name, path in btn_setting.items():
+        for name, obj in btn_setting.items():
             button = QPushButton()
             button.setObjectName(name)
-            button.setIcon(QIcon(self._handle_icon_path(path)))
-            button.setFixedSize(36, 36)
+            button.setIcon(QIcon(self._handle_icon_path(obj["path"])))
+            button.setToolTip(obj["tooltip"])
+            button.setFixedSize(32, 32)
 
             icon_size = button.size() * 0.7
             button.setIconSize(QSize(icon_size.width(), icon_size.height()))
