@@ -45,7 +45,8 @@ class DesktopWidget(QMainWindow, DatePicker):
 
     按鈕功能:
     previous: 上一天
-    create:
+    update:
+    submit:
     bullet-list:
     to-do:
     P:
@@ -136,25 +137,6 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         pass
 
-    def create_template(self):
-        '''
-        create_template(self): 創建模板按鈕觸發
-        '''
-        pass
-
-    def create_bullet_list(self):
-        '''
-        create_bullet_list(self): 創建 bullet_list 按鈕觸發
-        '''
-        pass
-
-    def create_to_do(self):
-        '''
-        create_to_do(self): 創建 to_do 按鈕觸發
-        '''
-        pass
-
-    def create_paragragh(self):
         '''
         create_paragragh(self): 創建 p 按鈕觸發
         '''
@@ -238,7 +220,6 @@ class DesktopWidget(QMainWindow, DatePicker):
         for index, data in enumerate(list_test):
             if data['type'] == 'to_do':
                 to_do_layout = QHBoxLayout()
-                # 創建 QCheckBox & QLineEdit
                 checkbox = QCheckBox()
                 checkbox.setChecked(data['checked'])
                 checkbox.setObjectName(f'{index}-checkbox')
@@ -253,7 +234,6 @@ class DesktopWidget(QMainWindow, DatePicker):
                 pass
 
             if data['type'] == 'paragraph':
-                # 創建 QTextEdit
                 if 'content_text' in data.keys():
                     content = QTextEdit()
                     content.setText(data['content_text'])
@@ -284,7 +264,8 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         btn_setting: Dict = {
             'previous': f'previous-{btn_icon_mode}.ico',
-            'create': f'create-{btn_icon_mode}.ico',
+            'update': f'update-{btn_icon_mode}.ico',
+            'submit': f'submit-{btn_icon_mode}.ico',
             'bullet-list': f'bullet-list-{btn_icon_mode}.ico',
             'to-do': f'to-do-{btn_icon_mode}.ico',
             'P': f'p-{btn_icon_mode}.ico',
