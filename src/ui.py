@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QLineEdit, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 from datetime import date, datetime, timedelta
@@ -98,6 +98,11 @@ class DesktopWidget(QMainWindow, DatePicker):
             QMainWindow{{
                 background-color: {styles['window-bg']};
             }}
+            QWidget {{
+                background-color: {styles['window-bg']};
+                color: {styles['text-color']};
+                font-size: 12px;
+            }}
             QLabel {{
                 color: {styles['text-color']};
                 font-family: '新細明體';
@@ -175,8 +180,10 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         darkbtn.setIcon(QIcon(self._handle_icon_path(mode_icon_path)))
 
-        darkbtn.setFixedSize(36, 36)
-        darkbtn.setIconSize(darkbtn.size())
+        darkbtn.setFixedSize(32, 32)
+
+        icon_size = darkbtn.size() * 0.8
+        darkbtn.setIconSize(QSize(icon_size.width(), icon_size.height()))
         darkbtn.setCursor(Qt.PointingHandCursor)
 
         darkbtn.setStyleSheet(f'''
@@ -198,10 +205,10 @@ class DesktopWidget(QMainWindow, DatePicker):
         main_layout.addLayout(h1_layout)
 
         # - 垂直布局 1 - (內容區塊)
-        v1_layout = QVBoxLayout()
+        content_widget = QWidget()
+        v1_layout = QVBoxLayout(content_widget)
 
         # 3. Notion 內容區塊 (需要動態調整的)
-        # UI 需要創建 QScrollArea()
         # 模擬從 API 取得資料
         list_test = [
             {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'to_do',
@@ -212,6 +219,10 @@ class DesktopWidget(QMainWindow, DatePicker):
                 'type': 'to_do', 'checked': False, 'content_text': '投 3 ~ 5 間公司履歷'},
             {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
              'type': 'paragraph', 'content_text': '⇒ 下一個是理財專案'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
+            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
+             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
             {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
              'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
             {'parent': {'type': 'page_id',
@@ -228,6 +239,7 @@ class DesktopWidget(QMainWindow, DatePicker):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-to_do-content')
+                content.setFixedHeight(24)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -244,6 +256,7 @@ class DesktopWidget(QMainWindow, DatePicker):
                     content = QTextEdit()
                     content.setText(data['content_text'])
                     content.setObjectName(f'{index}-paragraph-content')
+                    content.setFixedHeight(24)
                     content.setStyleSheet("""
                     QTextEdit {
                         background-color: rgba(255, 255, 255, 0);
@@ -261,6 +274,7 @@ class DesktopWidget(QMainWindow, DatePicker):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-bulleted_list-content')
+                content.setFixedHeight(24)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -272,9 +286,21 @@ class DesktopWidget(QMainWindow, DatePicker):
                 bulleted_list_layout.addWidget(content)
                 v1_layout.addLayout(bulleted_list_layout)
                 pass
+
+        # 使用 QScrollArea() 讓每個項目可以正常顯示，超出範圍也可以滾動
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setWidget(content_widget)
+        scroll_area.setFixedHeight(140)
+        scroll_area.setStyleSheet(f"""
+            QScrollArea {{
+                border: none;
+            }}
+        """)
+
         # - End. -
 
-        main_layout.addLayout(v1_layout)
+        main_layout.addWidget(scroll_area)
 
         # - 水平布局 2 - (按鈕區塊)
         # 4. Button 區塊
