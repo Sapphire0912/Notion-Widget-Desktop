@@ -144,7 +144,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         # objectName 於 ui 中的 btn_setting 的 key
         btn_object_name = self.sender().objectName()
-
+        # 此處未來可以優化成 key -> function
         if btn_object_name == 'previous':
             self.previous_day()
 
@@ -160,6 +160,7 @@ class DesktopWidget(QMainWindow, DatePicker):
             pass
 
         if btn_object_name == 'bullet-list':
+            # 建立 bullet-list 元件 (MongoDB)
             pass
 
         if btn_object_name == 'to-do':
@@ -189,7 +190,7 @@ class DesktopWidget(QMainWindow, DatePicker):
             # 若資料不存在則呼叫 API 傳送資料，並將資料儲存至 Database 內部
             datas = PageOperator(
                 currentDate=self.format_date()).get_page_contents()
-            self.db.insert_data(data=datas)
+            self.db.insert_data(data=datas)  # 可以等元件創建完成後再插入資料
         # -- End. --
 
         # index 提供給 self.sender 接收具體是更改哪個元件
