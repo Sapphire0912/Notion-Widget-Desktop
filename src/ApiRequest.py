@@ -87,13 +87,25 @@ class PageOperator(RequestNotionDatabase):
     def get_page_contents(self) -> List[Dict]:
         '''
         get_page_contents(self): 取得 page 的文字內容(如: text, to-do 等)
+
+        回傳資訊的 Dict 包含:
+        parent: Notion 中父容器的 id 與類型
+        task_date: 當前日期 self.currentDate
+        last_edited_time: Notion 中最後編輯時間
+        type: block 中的類型 (如: to-do, paragraph, bullet-list)
+        checked: 如果是 to-do 類型，則有此 key 紀錄是否已勾選
+        content_text: 文字內容
         '''
+
         data = self.get_page_json().get('results', [])
         content_list: List[Dict] = list()
-
         for block in data:
             content_info: Dict = {
-                "parent": block["parent"], "type": block["type"], }
+                "parent": block["parent"],
+                "task_date": self.currentDate,
+                "last_edited_time": self.pageObject[self.currentDate]["last_edited_time"],
+                "type": block["type"],
+            }
 
             notion_type: Dict = block[block["type"]]
             if block["type"] == "to_do":

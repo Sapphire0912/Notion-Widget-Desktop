@@ -21,6 +21,7 @@ class DatePicker(object):
 
     def __init__(self, current: date = None):
         self.current: date = current if current else datetime.today()
+        self.last_edited_time = datetime.now()
 
     def format_date(self) -> str:
         '''
@@ -180,10 +181,13 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         # 取得當日的 Notion 資料
         # -- 連結 MongoDB 資料庫 --
-        datas = DBOperation().get_data({"task-date": self.format_date()})
+        db = DBOperation()
+        datas = db.get_data({"task_date": self.format_date()})
         if len(datas) == 0:
+            # 若資料不存在則呼叫 API 傳送資料，並將資料儲存至 Database 內部
             datas = PageOperator(
                 currentDate=self.format_date()).get_page_contents()
+            db.insert_data(data=datas)
         # -- End. --
 
         # index 提供給 self.sender 接收具體是更改哪個元件
