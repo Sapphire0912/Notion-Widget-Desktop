@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVB
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon
 from ApiRequest import PageOperator
+from ConnectDB import DBOperation
 from datetime import date, datetime, timedelta
 from typing import Dict
 import sys
@@ -83,6 +84,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         self.content_widget = QWidget()
         self.v1_layout = QVBoxLayout(self.content_widget)
 
+        # - 創建 UI 同時需要向 db 索取資料 -
         self._windows_setting()
         self.ui()
 
@@ -146,9 +148,11 @@ class DesktopWidget(QMainWindow, DatePicker):
             self.next_day()
 
         if btn_object_name == 'update':
+            # 將 Notion 資料更新至 Database
             pass
 
         if btn_object_name == 'submit':
+            # 將 Database 資料傳送至 Notion
             pass
 
         if btn_object_name == 'bullet-list':
@@ -175,9 +179,12 @@ class DesktopWidget(QMainWindow, DatePicker):
         # - End. -
 
         # 取得當日的 Notion 資料
-        # 此處可以將資料存放至資料庫，僅在修改的時候才需要調用 API，平時則調用資料庫資訊
-        datas = PageOperator(currentDate=self.format_date()
-                             ).get_page_contents()
+        # -- 連結 MongoDB 資料庫 --
+        datas = DBOperation().get_data({"task-date": self.format_date()})
+        if len(datas) == 0:
+            datas = PageOperator(
+                currentDate=self.format_date()).get_page_contents()
+        # -- End. --
 
         # index 提供給 self.sender 接收具體是更改哪個元件
         for index, data in enumerate(datas):

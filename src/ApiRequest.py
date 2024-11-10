@@ -64,6 +64,8 @@ class PageOperator(RequestNotionDatabase):
             task_date = data["properties"]["Date"]["date"]["start"]
             pages_info[task_date] = {
                 "page_id": data["id"],
+                "task_date": task_date,
+                "last_edited_time": data["last_edited_time"],
                 "icon": data["icon"],
                 "parent": data["parent"],  # database id
                 "properties": data["properties"],
