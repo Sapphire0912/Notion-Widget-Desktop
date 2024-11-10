@@ -46,11 +46,11 @@ class DesktopWidget(QMainWindow, DatePicker):
 
     按鈕功能:
     previous: 上一天
-    update:
-    submit:
-    bullet-list:
-    to-do:
-    P:
+    update: 將 Notion 資料更新至 Widget
+    submit: 將 Widget 資料傳送至 Notion
+    bullet-list: 創建 bullet-list 物件
+    to-do: 創建 to-do-list 物件
+    P: 創建 paragraph 物件
     next: 下一天
     """
 
@@ -129,24 +129,43 @@ class DesktopWidget(QMainWindow, DatePicker):
     def _handle_btn_events(self):
         '''
         _handle_btn_events(self): 處理按鈕功能觸發時，引導相應的處理函式
+        註：與 api 傳送資料的 method
         '''
         # objectName 於 ui 中的 btn_setting 的 key
         btn_object_name = self.sender().objectName()
 
         if btn_object_name == 'previous':
             self.previous_day()
-            self.date_label.setText(self.format_date())
 
         if btn_object_name == 'next':
             self.next_day()
-            self.date_label.setText(self.format_date())
 
+        if btn_object_name == 'update':
+            pass
+
+        if btn_object_name == 'submit':
+            pass
+
+        if btn_object_name == 'bullet-list':
+            pass
+
+        if btn_object_name == 'to-do':
+            pass
+
+        if btn_object_name == 'P':
+            pass
+
+        self._update_content_section()
+        self.ui()  # 將整個 Widget 重新渲染一次
         pass
 
     def _update_content_section(self):
         '''
         _update_content_section(self): 更新內容文字區塊的元件
+        註：需要清空 content_widget 元件的內容
         '''
+
+        pass
 
     def ui(self):
         '''
@@ -297,7 +316,6 @@ class DesktopWidget(QMainWindow, DatePicker):
                 border: none;
             }}
         """)
-
         # - End. -
 
         main_layout.addWidget(scroll_area)
