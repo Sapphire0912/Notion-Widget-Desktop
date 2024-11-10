@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon
+from PyQt5.QtGui import QIcon, QFont
 from ApiRequest import PageOperator
 from ConnectDB import DBOperation
 from datetime import date, datetime, timedelta
@@ -21,7 +21,7 @@ class DatePicker(object):
 
     def __init__(self, current: date = None):
         self.current: date = current if current else datetime.today()
-        self.last_edited_time = datetime.now()
+        self.last_edited_time = datetime.now()   # 要對應 API & DB 的格式
 
     def format_date(self) -> str:
         '''
@@ -82,10 +82,13 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         # 需要更新內容元件的變數
         self.date_label = QLabel('', self)  # 定義日期的初始狀態
+        self.last_edited_time_label = QLabel('', self)  # 定義最後 Notion 更新時間
+
         self.content_widget = QWidget()
         self.v1_layout = QVBoxLayout(self.content_widget)
 
         # - 創建 UI 同時需要向 db 索取資料 -
+        self.db = DBOperation()
         self._windows_setting()
         self.ui()
 
@@ -99,7 +102,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
 
         self.setWindowIcon(QIcon(self._handle_icon_path('task.ico')))
-        self.setFixedSize(320, 240)
+        self.setFixedSize(360, 280)
 
         styles: Dict = self.windows_style['dark'] if self.dark else self.windows_style['bright']
         self.setStyleSheet(f"""
@@ -181,13 +184,12 @@ class DesktopWidget(QMainWindow, DatePicker):
 
         # 取得當日的 Notion 資料
         # -- 連結 MongoDB 資料庫 --
-        db = DBOperation()
-        datas = db.get_data({"task_date": self.format_date()})
+        datas = self.db.get_data({"task_date": self.format_date()})
         if len(datas) == 0:
             # 若資料不存在則呼叫 API 傳送資料，並將資料儲存至 Database 內部
             datas = PageOperator(
                 currentDate=self.format_date()).get_page_contents()
-            db.insert_data(data=datas)
+            self.db.insert_data(data=datas)
         # -- End. --
 
         # index 提供給 self.sender 接收具體是更改哪個元件
@@ -276,7 +278,13 @@ class DesktopWidget(QMainWindow, DatePicker):
         # 1. 顯示當前日期
         self.date_label = QLabel(self.format_date(), self)
 
-        # 2. Dark Mode Button
+        # 2. 顯示 Notion 最後更新日期
+        datas = self.db.get_data({"task_date": self.format_date()})
+        if len(datas) != 0:
+            self.last_edited_time_label = QLabel(
+                f"最後更新時間:\n{datas[0]["last_edited_time"]}", self)
+
+        # 3. Dark Mode Button
         darkbtn = QPushButton()
 
         darkbtn.setIcon(QIcon(self._handle_icon_path(mode_icon_path)))
@@ -300,6 +308,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         darkbtn.clicked.connect(self._switch_bg_mode)
 
         h1_layout.addWidget(self.date_label)
+        h1_layout.addWidget(self.last_edited_time_label)
         h1_layout.addWidget(darkbtn)
         # - End. -
 

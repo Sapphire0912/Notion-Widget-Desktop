@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, List
 import requests
 import os
@@ -61,11 +61,15 @@ class PageOperator(RequestNotionDatabase):
         pages_info = dict()
         for data in self.data:
             # 使用任務日期當作 key
-            task_date = data["properties"]["Date"]["date"]["start"]
+            task_date: str = data["properties"]["Date"]["date"]["start"]
+            TW_Time = datetime.fromisoformat(
+                data["last_edited_time"].replace("Z", "+00:00")) + timedelta(hours=8)
+            last_edited_time: str = TW_Time.strftime('%Y-%m-%d %H:%M:%S')
+
             pages_info[task_date] = {
                 "page_id": data["id"],
                 "task_date": task_date,
-                "last_edited_time": data["last_edited_time"],
+                "last_edited_time": last_edited_time,
                 "icon": data["icon"],
                 "parent": data["parent"],  # database id
                 "properties": data["properties"],
