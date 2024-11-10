@@ -85,7 +85,6 @@ class PageOperator(RequestNotionDatabase):
     def get_page_contents(self) -> List[Dict]:
         '''
         get_page_contents(self): 取得 page 的文字內容(如: text, to-do 等)
-        -> 創建 contents 模板需要的資訊 <-
         '''
         data = self.get_page_json().get('results', [])
         content_list: List[Dict] = list()
@@ -108,5 +107,5 @@ class PageOperator(RequestNotionDatabase):
         return content_list
 
 
-page_obj = PageOperator()
-print(page_obj.get_page_contents())
+# page_obj = PageOperator()
+# print(page_obj.get_page_contents())

@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
 from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtGui import QIcon
+from ApiRequest import PageOperator
 from datetime import date, datetime, timedelta
 from typing import Dict
 import sys
@@ -76,7 +77,11 @@ class DesktopWidget(QMainWindow, DatePicker):
                 'btn-bg-hover': 'rgb(104, 198, 104)'
             }
         }
+
+        # 需要更新內容元件的變數
         self.date_label = QLabel('', self)  # 定義日期的初始狀態
+        self.content_widget = QWidget()
+        self.v1_layout = QVBoxLayout(self.content_widget)
 
         self._windows_setting()
         self.ui()
@@ -155,7 +160,6 @@ class DesktopWidget(QMainWindow, DatePicker):
         if btn_object_name == 'P':
             pass
 
-        self._update_content_section()
         self.ui()  # 將整個 Widget 重新渲染一次
         pass
 
@@ -165,7 +169,74 @@ class DesktopWidget(QMainWindow, DatePicker):
         註：需要清空 content_widget 元件的內容
         '''
 
-        pass
+        # - 清空布局 -
+        self.content_widget = QWidget()
+        self.v1_layout = QVBoxLayout(self.content_widget)
+        # - End. -
+
+        # 取得當日的 Notion 資料
+        # 此處可以將資料存放至資料庫，僅在修改的時候才需要調用 API，平時則調用資料庫資訊
+        datas = PageOperator(currentDate=self.format_date()
+                             ).get_page_contents()
+
+        # index 提供給 self.sender 接收具體是更改哪個元件
+        for index, data in enumerate(datas):
+            if data['type'] == 'to_do':
+                to_do_layout = QHBoxLayout()
+                checkbox = QCheckBox()
+                checkbox.setChecked(data['checked'])
+                checkbox.setObjectName(f'{index}-checkbox')
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-to_do-content')
+                content.setFixedHeight(24)
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
+
+                to_do_layout.addWidget(checkbox)
+                to_do_layout.addWidget(content)
+                self.v1_layout.addLayout(to_do_layout)
+
+            if data['type'] == 'paragraph':
+                if 'content_text' in data.keys():
+                    content = QTextEdit()
+                    content.setText(data['content_text'])
+                    content.setObjectName(f'{index}-paragraph-content')
+                    content.setFixedHeight(24)
+                    content.setStyleSheet("""
+                    QTextEdit {
+                        background-color: rgba(255, 255, 255, 0);
+                        border: none;
+                    }
+                    """)
+                    self.v1_layout.addWidget(content)
+                pass
+
+            if data['type'] == 'bulleted_list_item':
+                bulleted_list_layout = QHBoxLayout()
+                label = QLabel('•')
+                label.setObjectName(f'{index}-bulleted_list-label')
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-bulleted_list-content')
+                content.setFixedHeight(24)
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
+
+                bulleted_list_layout.addWidget(label)
+                bulleted_list_layout.addWidget(content)
+                self.v1_layout.addLayout(bulleted_list_layout)
+                pass
 
     def ui(self):
         '''
@@ -224,101 +295,21 @@ class DesktopWidget(QMainWindow, DatePicker):
         main_layout.addLayout(h1_layout)
 
         # - 垂直布局 1 - (內容區塊)
-        content_widget = QWidget()
-        v1_layout = QVBoxLayout(content_widget)
-
-        # 3. Notion 內容區塊 (需要動態調整的)
-        # 模擬從 API 取得資料
-        list_test = [
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'to_do',
-             'checked': False, 'content_text': '製作 Notion widget Desktop 專案'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-             'type': 'to_do', 'checked': True, 'content_text': '重新修正兩份履歷未來規劃的內容'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-                'type': 'to_do', 'checked': False, 'content_text': '投 3 ~ 5 間公司履歷'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-             'type': 'paragraph', 'content_text': '⇒ 下一個是理財專案'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
-            {'parent': {'type': 'page_id', 'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'},
-             'type': 'bulleted_list_item', 'content_text': 'AAABBB'},
-            {'parent': {'type': 'page_id',
-                        'page_id': '135e72f9-cc2c-807d-809b-fa06398225f4'}, 'type': 'paragraph'}
-        ]
-        # index 提供給 self.sender 接收具體是更改哪個元件
-        for index, data in enumerate(list_test):
-            if data['type'] == 'to_do':
-                to_do_layout = QHBoxLayout()
-                checkbox = QCheckBox()
-                checkbox.setChecked(data['checked'])
-                checkbox.setObjectName(f'{index}-checkbox')
-
-                content = QTextEdit()
-                content.setText(data['content_text'])
-                content.setObjectName(f'{index}-to_do-content')
-                content.setFixedHeight(24)
-                content.setStyleSheet("""
-                QTextEdit {
-                    background-color: rgba(255, 255, 255, 0);
-                    border: none;
-                }
-                """)
-
-                to_do_layout.addWidget(checkbox)
-                to_do_layout.addWidget(content)
-                v1_layout.addLayout(to_do_layout)
-
-            if data['type'] == 'paragraph':
-                if 'content_text' in data.keys():
-                    content = QTextEdit()
-                    content.setText(data['content_text'])
-                    content.setObjectName(f'{index}-paragraph-content')
-                    content.setFixedHeight(24)
-                    content.setStyleSheet("""
-                    QTextEdit {
-                        background-color: rgba(255, 255, 255, 0);
-                        border: none;
-                    }
-                    """)
-                    v1_layout.addWidget(content)
-                pass
-
-            if data['type'] == 'bulleted_list_item':
-                bulleted_list_layout = QHBoxLayout()
-                label = QLabel('•')
-                label.setObjectName(f'{index}-bulleted_list-label')
-
-                content = QTextEdit()
-                content.setText(data['content_text'])
-                content.setObjectName(f'{index}-bulleted_list-content')
-                content.setFixedHeight(24)
-                content.setStyleSheet("""
-                QTextEdit {
-                    background-color: rgba(255, 255, 255, 0);
-                    border: none;
-                }
-                """)
-
-                bulleted_list_layout.addWidget(label)
-                bulleted_list_layout.addWidget(content)
-                v1_layout.addLayout(bulleted_list_layout)
-                pass
+        # 3. Notion 內容區塊
+        self._update_content_section()  # 需動態更新內容
 
         # 使用 QScrollArea() 讓每個項目可以正常顯示，超出範圍也可以滾動
-        scroll_area = QScrollArea()
-        scroll_area.setWidgetResizable(True)
-        scroll_area.setWidget(content_widget)
-        scroll_area.setFixedHeight(140)
-        scroll_area.setStyleSheet(f"""
+        content_scroll_area = QScrollArea()
+        content_scroll_area.setWidgetResizable(True)
+        content_scroll_area.setWidget(self.content_widget)
+        content_scroll_area.setFixedHeight(140)
+        content_scroll_area.setStyleSheet(f"""
             QScrollArea {{
                 border: none;
             }}
         """)
+        main_layout.addWidget(content_scroll_area)
         # - End. -
-
-        main_layout.addWidget(scroll_area)
 
         # - 水平布局 2 - (按鈕區塊)
         # 4. Button 區塊
