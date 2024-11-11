@@ -55,6 +55,8 @@ class HandleAPIandDB(object):
         if len(datas) == 0:
             self.flag: bool = False
             datas = PageOperator(currentDate=date).get_page_contents()
+        else:
+            self.flag: bool = True
 
         self.data = datas
         return datas
@@ -72,18 +74,12 @@ class HandleAPIandDB(object):
         '''
         return self.db.update_data(query={"$and": query}, new_data=new_data)
 
-    def compare_lastest_data(self) -> bool:
+    def synchronous_notion_to_db_data(self, date: str):
         '''
-        compare_lastest_data(self): 比較 Notion API 的資料，以及資料庫的資料最後更新時間
-        註：更新資料會以最新的資料為主
+        synchronous_notion_to_db_data(self, date: str): 將 Notion 資料更新至 Database
+        註：此處僅處理刪除 date 的 db 資料
         '''
-        pass
-
-    def synchronous_notion_to_db_data(self):
-        '''
-        synchronous_notion_to_db_data(self): 將 Notion 資料更新至 Database
-        '''
-        pass
+        self.db.delete_data({"task_date": date})
 
     def upload_data_db_to_notion(self):
         '''
@@ -211,9 +207,12 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
         if message_box.clickedButton() == btn_ok:
             if name == "update":
-                self.synchronous_notion_to_db_data()
+                self.synchronous_notion_to_db_data(self.format_date())
+                # 重新渲染 UI
+                self._update_content_section()
+
             elif name == "submit":
-                self.upload_data_db_to_notion()
+                self.upload_data_db_to_notion(self.format_date())
 
         elif message_box.clickedButton() == btn_cancel:
             pass
@@ -293,7 +292,6 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         else:
             raise ValueError('Object 類型不正確')
         # - End. -
-        pass
 
     def _update_content_section(self):
         '''
@@ -308,7 +306,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         # 取得當日的 Notion 資料
         datas, flag = self.get_task_data(self.format_date()), self.flag
         self.last_edited_time_label.setText(
-            f"最後更新時間:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
+            f"Notion 最後更新:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
 
         # index 提供給 self.sender 接收具體是更改哪個元件
         for index, data in enumerate(datas):
