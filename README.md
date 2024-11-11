@@ -8,6 +8,7 @@ Notion-Widget Desktop 是一款 Notion 桌面版的小工具，專為提升生�
 - **PyQt5**
 - **MongoDB**
 - **Notion API**
+- **Postman**
 
 ### 時程
 

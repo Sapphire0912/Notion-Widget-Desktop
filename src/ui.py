@@ -1,10 +1,10 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 from ApiRequest import PageOperator
 from ConnectDB import DBOperation
 from datetime import date, datetime, timedelta
-from typing import Dict
+from typing import Dict, List
 import sys
 import os
 
@@ -21,7 +21,6 @@ class DatePicker(object):
 
     def __init__(self, current: date = None):
         self.current: date = current if current else datetime.today()
-        self.last_edited_time = datetime.now()   # 要對應 API & DB 的格式
 
     def format_date(self) -> str:
         '''
@@ -42,7 +41,54 @@ class DatePicker(object):
         self.current += timedelta(days=1)
 
 
-class DesktopWidget(QMainWindow, DatePicker):
+class HandleAPIandDB(object):
+    def __init__(self):
+        self.db = DBOperation()
+        self.flag: bool = True  # 是否為資料庫的資料，True 為是，False 為 API 的資料
+        self.data: List[Dict] = None
+
+    def get_task_data(self, date: str) -> List[Dict]:
+        '''
+        get_task_data(self): 取得當日資料庫的資料，若無則向 Notion API 請求取得最新資料，回傳找到的所有資料 List[Dict]
+        '''
+        datas: List[Dict] = self.db.find_data({"task_date": date})
+        if len(datas) == 0:
+            self.flag: bool = False
+            datas = PageOperator(currentDate=date).get_page_contents()
+        else:
+            self.flag: bool = True
+
+        self.data = datas
+        return datas
+
+    def create_db_data(self, data: List[Dict]) -> int:
+        '''
+        create_db_data(self, data: List[Dict]): 若資料庫不存在資料，則需要在創建 PyQt5 元件的時候將 ObjectName 也新增至 DB 做儲存
+        回傳共插入了幾筆資料至資料庫，int
+        '''
+        return len(self.db.insert_data(data=data).inserted_ids)
+
+    def update_content(self, query: List[Dict], new_data):
+        '''
+        update_content(query, new_data): 更新資料庫的內容
+        '''
+        return self.db.update_data(query={"$and": query}, new_data=new_data)
+
+    def synchronous_notion_to_db_data(self, date: str):
+        '''
+        synchronous_notion_to_db_data(self, date: str): 將 Notion 資料更新至 Database
+        註：此處僅處理刪除 date 的 db 資料
+        '''
+        self.db.delete_data({"task_date": date})
+
+    def upload_data_db_to_notion(self):
+        '''
+        upload_data_db_to_notion(self): 將 Database 資料更新至 Notion
+        '''
+        pass
+
+
+class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
     """
     DesktopWidget(QMainWindow, DatePicker):
     建立 Notion Widget 的 UI 介面
@@ -60,6 +106,7 @@ class DesktopWidget(QMainWindow, DatePicker):
     def __init__(self):
         QMainWindow.__init__(self)
         DatePicker.__init__(self)
+        HandleAPIandDB.__init__(self)
 
         # UI 的相關屬性
         self.dark: bool = False  # 當前背景是 Dark 還是 Bright
@@ -88,7 +135,6 @@ class DesktopWidget(QMainWindow, DatePicker):
         self.v1_layout = QVBoxLayout(self.content_widget)
 
         # - 創建 UI 同時需要向 db 索取資料 -
-        self.db = DBOperation()
         self._windows_setting()
         self.ui()
 
@@ -137,6 +183,40 @@ class DesktopWidget(QMainWindow, DatePicker):
         self._windows_setting()
         self.ui()
 
+    def _show_message_box(self, name: str):
+        '''
+        _show_message_box(self, name: str): 當使用者點選"更新"或"上傳"按鈕時的確認視窗
+        '''
+        message_box = QMessageBox()
+        message_box.setWindowTitle('提醒訊息')
+        message_box.setWindowFlags(
+            message_box.windowFlags() | Qt.WindowStaysOnTopHint)
+        message_box.setWindowIcon(QIcon(self._handle_icon_path('task.ico')))
+
+        if name == 'update':
+            message_box.setText('是否確定將 Notion 資料同步至本機資料庫')
+
+        elif name == 'submit':
+            message_box.setText('是否確定將本機資料庫的資料上傳至 Notion 並同步')
+
+        message_box.setIcon(QMessageBox.Information)
+        btn_ok = message_box.addButton('確認', QMessageBox.AcceptRole)
+        btn_cancel = message_box.addButton('取消', QMessageBox.RejectRole)
+
+        message_box.exec_()
+
+        if message_box.clickedButton() == btn_ok:
+            if name == "update":
+                self.synchronous_notion_to_db_data(self.format_date())
+                # 重新渲染 UI
+                self._update_content_section()
+
+            elif name == "submit":
+                self.upload_data_db_to_notion(self.format_date())
+
+        elif message_box.clickedButton() == btn_cancel:
+            pass
+
     def _handle_btn_events(self):
         '''
         _handle_btn_events(self): 處理按鈕功能觸發時，引導相應的處理函式
@@ -144,6 +224,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         '''
         # objectName 於 ui 中的 btn_setting 的 key
         btn_object_name = self.sender().objectName()
+
         # 此處未來可以優化成 key -> function
         if btn_object_name == 'previous':
             self.previous_day()
@@ -152,54 +233,94 @@ class DesktopWidget(QMainWindow, DatePicker):
             self.next_day()
 
         if btn_object_name == 'update':
-            # 將 Notion 資料更新至 Database
-            pass
+            self._show_message_box(name='update')
 
         if btn_object_name == 'submit':
-            # 將 Database 資料傳送至 Notion
-            pass
+            self._show_message_box(name='submit')
 
         if btn_object_name == 'bullet-list':
             # 建立 bullet-list 元件 (MongoDB)
             pass
 
         if btn_object_name == 'to-do':
+            # 建立 to-do 元件 (MongoDB)
             pass
 
         if btn_object_name == 'P':
+            # 建立 p 元件 (MongoDB)
             pass
 
         self.ui()  # 將整個 Widget 重新渲染一次
         pass
+
+    def _handle_content_events(self):
+        '''
+        _handle_content_events(self): 處理 content 區塊中的事件。例如：更新 TextEdit 內容、CheckBox 狀態等
+        註：一旦內容變動即時與 db 做更新資訊的操作
+        '''
+        event_object_name = self.sender().objectName()
+        object_info = event_object_name.split('-')
+        _, object_type, object_element = object_info[0], object_info[1], object_info[2]
+
+        # - 更新資料庫內容 -
+        query: List[Dict] = [
+            {"task_date": self.format_date(), "type": object_type}
+        ]
+        last_edited_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        if object_element == 'checkbox':
+            query.append(
+                {"checkbox_ObjectName": event_object_name})
+
+            # 取得觸發事件元件的狀態
+            checkbox = self.findChild(QCheckBox, event_object_name)
+            self.update_content(query=query, new_data={
+                                "checked": checkbox.isChecked(),
+                                "last_edited_time": last_edited_time
+                                })
+
+        elif object_element == 'content':
+            query.append({"content_ObjectName": event_object_name})
+
+            # 取得觸發事件元件的狀態
+            text_edit = self.findChild(QTextEdit, event_object_name)
+            self.update_content(query=query, new_data={
+                                "content_text": text_edit.toPlainText(),
+                                "last_edited_time": last_edited_time
+                                })
+
+        else:
+            raise ValueError('Object 類型不正確')
+        # - End. -
 
     def _update_content_section(self):
         '''
         _update_content_section(self): 更新內容文字區塊的元件
         註：需要清空 content_widget 元件的內容
         '''
-
         # - 清空布局 -
         self.content_widget = QWidget()
         self.v1_layout = QVBoxLayout(self.content_widget)
         # - End. -
 
         # 取得當日的 Notion 資料
-        # -- 連結 MongoDB 資料庫 --
-        datas = self.db.get_data({"task_date": self.format_date()})
-        if len(datas) == 0:
-            # 若資料不存在則呼叫 API 傳送資料，並將資料儲存至 Database 內部
-            datas = PageOperator(
-                currentDate=self.format_date()).get_page_contents()
-            self.db.insert_data(data=datas)  # 可以等元件創建完成後再插入資料
-        # -- End. --
+        datas, flag = self.get_task_data(self.format_date()), self.flag
+        self.last_edited_time_label.setText(
+            f"Notion 最後更新:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
 
         # index 提供給 self.sender 接收具體是更改哪個元件
         for index, data in enumerate(datas):
             if data['type'] == 'to_do':
+                if not flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["checkbox_ObjectName"] = f'{index}-to_do-checkbox'
+                    data["content_ObjectName"] = f'{index}-to_do-content'
+                    # - End. -
+
                 to_do_layout = QHBoxLayout()
                 checkbox = QCheckBox()
                 checkbox.setChecked(data['checked'])
-                checkbox.setObjectName(f'{index}-checkbox')
+                checkbox.setObjectName(f'{index}-to_do-checkbox')
 
                 content = QTextEdit()
                 content.setText(data['content_text'])
@@ -212,26 +333,47 @@ class DesktopWidget(QMainWindow, DatePicker):
                 }
                 """)
 
+                # - 加入事件處理 -
+                checkbox.stateChanged.connect(self._handle_content_events)
+                content.textChanged.connect(self._handle_content_events)
+                # - End. -
+
                 to_do_layout.addWidget(checkbox)
                 to_do_layout.addWidget(content)
                 self.v1_layout.addLayout(to_do_layout)
 
-            if data['type'] == 'paragraph':
-                if 'content_text' in data.keys():
-                    content = QTextEdit()
-                    content.setText(data['content_text'])
-                    content.setObjectName(f'{index}-paragraph-content')
-                    content.setFixedHeight(24)
-                    content.setStyleSheet("""
-                    QTextEdit {
-                        background-color: rgba(255, 255, 255, 0);
-                        border: none;
-                    }
-                    """)
-                    self.v1_layout.addWidget(content)
-                pass
+            if data['type'] == 'paragraph' and 'content_text' in data.keys():
+                if not flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["content_ObjectName"] = f'{
+                        index}-paragraph-content'
+                    # - End. -
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-paragraph-content')
+                content.setFixedHeight(24)
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
+
+                # - 加入事件處理 -
+                content.textChanged.connect(self._handle_content_events)
+                # - End. -
+
+                self.v1_layout.addWidget(content)
 
             if data['type'] == 'bulleted_list_item':
+                if not flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["label_ObjectName"] = f'{index}-bulleted_list-label'
+                    data["content_ObjectName"] = f'{
+                        index}-bulleted_list-content'
+                    # - End. -
+
                 bulleted_list_layout = QHBoxLayout()
                 label = QLabel('•')
                 label.setObjectName(f'{index}-bulleted_list-label')
@@ -247,10 +389,15 @@ class DesktopWidget(QMainWindow, DatePicker):
                 }
                 """)
 
+                # - 加入事件處理 -
+                content.textChanged.connect(self._handle_content_events)
+                # - End. -
                 bulleted_list_layout.addWidget(label)
                 bulleted_list_layout.addWidget(content)
                 self.v1_layout.addLayout(bulleted_list_layout)
-                pass
+
+        if not flag:
+            self.create_db_data(data=datas)
 
     def ui(self):
         '''
@@ -280,10 +427,7 @@ class DesktopWidget(QMainWindow, DatePicker):
         self.date_label = QLabel(self.format_date(), self)
 
         # 2. 顯示 Notion 最後更新日期
-        datas = self.db.get_data({"task_date": self.format_date()})
-        if len(datas) != 0:
-            self.last_edited_time_label = QLabel(
-                f"最後更新時間:\n{datas[0]["last_edited_time"]}", self)
+        self.last_edited_time_label = QLabel("最後更新時間:\n", self)
 
         # 3. Dark Mode Button
         darkbtn = QPushButton()

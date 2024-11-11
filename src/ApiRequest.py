@@ -124,6 +124,16 @@ class PageOperator(RequestNotionDatabase):
 
         return content_list
 
+    def patch_page_data(self, data: Dict) -> int:
+        '''
+        patch_page_data(self, data: Dict): 向 Notion 傳送需要更新的資料, 回應 response code
+        註：data 必須符合 Notion API 的文件格式
+        '''
+        page_id: str = self.pageObject[self.currentDate]["page_id"]
+        url: str = f'https://api.notion.com/v1/blocks/{page_id}'
+
+        response = requests.patch(url=url, headers=self.header, json=data)
+        return response.status_code
 
 # page_obj = PageOperator()
 # print(page_obj.get_page_contents())
