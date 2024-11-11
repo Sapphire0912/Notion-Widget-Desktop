@@ -172,10 +172,18 @@ class DesktopWidget(QMainWindow, DatePicker):
         self.ui()  # 將整個 Widget 重新渲染一次
         pass
 
+    def _handle_content_events(self):
+        '''
+        _handle_content_events(self): 處理 content 區塊中的事件。例如：更新 TextEdit 內容、CheckBox 狀態等
+        註：需要連結 db，一旦內容變動即時與 db 做更新資訊的操作
+        '''
+        pass
+
     def _update_content_section(self):
         '''
-        _update_content_section(self): 更新內容文字區塊的元件
+        _update_content_section(self): 更新內容文字區塊的元件，以及將資料儲存至 MongoDB 中
         註：需要清空 content_widget 元件的內容
+        註2：需要將物件 ObjectName 新增至 MongoDB 中儲存
         '''
 
         # - 清空布局 -
@@ -186,16 +194,23 @@ class DesktopWidget(QMainWindow, DatePicker):
         # 取得當日的 Notion 資料
         # -- 連結 MongoDB 資料庫 --
         datas = self.db.get_data({"task_date": self.format_date()})
+        _flag: bool = True
         if len(datas) == 0:
             # 若資料不存在則呼叫 API 傳送資料，並將資料儲存至 Database 內部
             datas = PageOperator(
                 currentDate=self.format_date()).get_page_contents()
-            self.db.insert_data(data=datas)  # 可以等元件創建完成後再插入資料
+            _flag: bool = False
         # -- End. --
 
         # index 提供給 self.sender 接收具體是更改哪個元件
         for index, data in enumerate(datas):
             if data['type'] == 'to_do':
+                if not _flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["checkbox_ObjectName"] = f'{index}-checkbox'
+                    data["content_ObjectName"] = f'{index}-to_do-content'
+                    # - End. -
+
                 to_do_layout = QHBoxLayout()
                 checkbox = QCheckBox()
                 checkbox.setChecked(data['checked'])
@@ -216,22 +231,33 @@ class DesktopWidget(QMainWindow, DatePicker):
                 to_do_layout.addWidget(content)
                 self.v1_layout.addLayout(to_do_layout)
 
-            if data['type'] == 'paragraph':
-                if 'content_text' in data.keys():
-                    content = QTextEdit()
-                    content.setText(data['content_text'])
-                    content.setObjectName(f'{index}-paragraph-content')
-                    content.setFixedHeight(24)
-                    content.setStyleSheet("""
-                    QTextEdit {
-                        background-color: rgba(255, 255, 255, 0);
-                        border: none;
-                    }
-                    """)
-                    self.v1_layout.addWidget(content)
-                pass
+            if data['type'] == 'paragraph' and 'content_text' in data.keys():
+                if not _flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["content_ObjectName"] = f'{
+                        index}-paragraph-content'
+                    # - End. -
+
+                content = QTextEdit()
+                content.setText(data['content_text'])
+                content.setObjectName(f'{index}-paragraph-content')
+                content.setFixedHeight(24)
+                content.setStyleSheet("""
+                QTextEdit {
+                    background-color: rgba(255, 255, 255, 0);
+                    border: none;
+                }
+                """)
+                self.v1_layout.addWidget(content)
 
             if data['type'] == 'bulleted_list_item':
+                if not _flag:
+                    # - 提供資料庫資訊，用於 CRUD -
+                    data["label_ObjectName"] = f'{index}-bulleted_list-label'
+                    data["content_ObjectName"] = f'{
+                        index}-bulleted_list-content'
+                    # - End. -
+
                 bulleted_list_layout = QHBoxLayout()
                 label = QLabel('•')
                 label.setObjectName(f'{index}-bulleted_list-label')
@@ -250,7 +276,9 @@ class DesktopWidget(QMainWindow, DatePicker):
                 bulleted_list_layout.addWidget(label)
                 bulleted_list_layout.addWidget(content)
                 self.v1_layout.addLayout(bulleted_list_layout)
-                pass
+
+        if not _flag:
+            self.db.insert_data(data=datas)  # 插入 datas 到 DB 中
 
     def ui(self):
         '''
