@@ -26,13 +26,13 @@ class DBOperation(object):
         self.db = client['NotionTask']
         self.collection = self.db['TaskList']
 
-    def get_data(self, query: Dict = {}) -> List[Dict]:
+    def find_data(self, query: Dict = {}) -> List[Dict]:
         '''
-        get_data(self, query: Dict = {}): 回傳符合 query 條件的所有資料
+        find_data(self, query: Dict = {}): 回傳符合 query 條件的所有資料
         '''
         return list(self.collection.find(query))
 
-    def insert_data(self, data: List[Dict]):
+    def insert_data(self, data: List[Dict]) -> List:
         '''
         insert_data(self, data: List[Dict]): 插入 Data 資料 (單筆或多筆資料皆可)，回傳 ids
         '''
