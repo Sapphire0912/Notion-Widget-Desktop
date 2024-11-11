@@ -21,8 +21,6 @@ class DatePicker(object):
 
     def __init__(self, current: date = None):
         self.current: date = current if current else datetime.today()
-        self.last_edited_time: str = datetime.now().strftime(
-            '%Y-%m-%d %H:%M:%S')   # 要對應 API & DB 的格式
 
     def format_date(self) -> str:
         '''
@@ -71,6 +69,25 @@ class HandleAPIandDB(object):
         update_content(query, new_data): 更新資料庫的內容
         '''
         return self.db.update_data(query={"$and": query}, new_data=new_data)
+
+    def compare_lastest_data(self) -> bool:
+        '''
+        compare_lastest_data(self): 比較 Notion API 的資料，以及資料庫的資料最後更新時間
+        註：更新資料會以最新的資料為主
+        '''
+        pass
+
+    def synchronous_notion_to_db_data(self):
+        '''
+        synchronous_notion_to_db_data(self): 將 Notion 資料更新至 Database
+        '''
+        pass
+
+    def upload_data_db_to_notion(self):
+        '''
+        upload_data_db_to_notion(self): 將 Database 資料更新至 Notion
+        '''
+        pass
 
 
 class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
@@ -185,11 +202,11 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
         if btn_object_name == 'update':
             # 將 Notion 資料更新至 Database
-            pass
+            self.synchronous_notion_to_db_data()
 
         if btn_object_name == 'submit':
             # 將 Database 資料傳送至 Notion
-            pass
+            self.upload_data_db_to_notion()
 
         if btn_object_name == 'bullet-list':
             # 建立 bullet-list 元件 (MongoDB)
