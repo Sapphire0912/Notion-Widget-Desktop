@@ -225,34 +225,20 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         # objectName 於 ui 中的 btn_setting 的 key
         btn_object_name = self.sender().objectName()
 
-        # 此處未來可以優化成 key -> function
-        if btn_object_name == 'previous':
-            self.previous_day()
+        key_functions: Dict[str, function] = {
+            'previous': self.previous_day,
+            'next': self.next_day,
+            'update': lambda: self._show_message_box(name='update'),
+            'submit': lambda: self._show_message_box(name='submit'),
+            'bullet-list': None,
+            'to-do': None,
+            'P': None
+        }
 
-        if btn_object_name == 'next':
-            self.next_day()
-
-        if btn_object_name == 'update':
-            self._show_message_box(name='update')
-
-        if btn_object_name == 'submit':
-            self._show_message_box(name='submit')
-
-        if btn_object_name == 'bullet-list':
-            # 建立 bullet-list 元件 (MongoDB)
-
-            pass
-
-        if btn_object_name == 'to-do':
-            # 建立 to-do 元件 (MongoDB)
-            pass
-
-        if btn_object_name == 'P':
-            # 建立 p 元件 (MongoDB)
-            pass
+        if btn_object_name in key_functions:
+            key_functions[btn_object_name]()
 
         self.ui()  # 將整個 Widget 重新渲染一次
-        pass
 
     def _handle_content_events(self):
         '''
