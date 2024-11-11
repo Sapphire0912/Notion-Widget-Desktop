@@ -45,6 +45,7 @@ class HandleAPIandDB(object):
     def __init__(self):
         self.db = DBOperation()
         self.flag: bool = True  # 是否為資料庫的資料，True 為是，False 為 API 的資料
+        self.data: List[Dict] = None
 
     def get_task_data(self, date: str) -> List[Dict]:
         '''
@@ -55,6 +56,7 @@ class HandleAPIandDB(object):
             self.flag: bool = False
             datas = PageOperator(currentDate=date).get_page_contents()
 
+        self.data = datas
         return datas
 
     def create_db_data(self, data: List[Dict]) -> int:
@@ -213,9 +215,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             elif name == "submit":
                 self.upload_data_db_to_notion()
 
-            print('確認操作')
         elif message_box.clickedButton() == btn_cancel:
-            print('取消操作')
             pass
 
     def _handle_btn_events(self):
