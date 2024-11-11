@@ -44,15 +44,15 @@ class DBOperation(object):
         update_data(self, query, new_data): 更新符合查詢條件的資料，並設定成 new_data 的值，回傳 update_count
         '''
         new_data = {"$set": new_data}
-        update_count = self.collection.update_many(query, new_data)
-        return update_count
+        update_result = self.collection.update_many(query, new_data)
+        return update_result.modified_count
 
     def delete_data(self, query):
         '''
         update_data(self, query): 刪除符合查詢條件的資料，回傳 delete_count
         '''
-        delete_count = self.collection.delete_many(query)
-        return delete_count
+        delete_result = self.collection.delete_many(query)
+        return delete_result.deleted_count
 
 
 # db_test = DBOperation()

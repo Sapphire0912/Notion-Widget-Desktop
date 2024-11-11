@@ -47,9 +47,9 @@ class HandleAPIandDB(object):
         self.db = DBOperation()
         self.flag: bool = True  # 是否為資料庫的資料，True 為是，False 為 API 的資料
 
-    def get_data(self, date: str) -> List[Dict]:
+    def get_task_data(self, date: str) -> List[Dict]:
         '''
-        get_data(self): 取得當日資料庫的資料，若無則向 Notion API 請求取得最新資料，回傳找到的所有資料 List[Dict]
+        get_task_data(self): 取得當日資料庫的資料，若無則向 Notion API 請求取得最新資料，回傳找到的所有資料 List[Dict]
         '''
         datas: List[Dict] = self.db.find_data({"task_date": date})
         if len(datas) == 0:
@@ -64,6 +64,24 @@ class HandleAPIandDB(object):
         回傳共插入了幾筆資料至資料庫，int
         '''
         return len(self.db.insert_data(data=data).inserted_ids)
+
+    def get_content_event_data(self, element: str, objectName: str, date: str):
+        '''
+        get_content_event_data(self, element: str, objectName: str, date: str): 回傳觸發事件的資料
+        註：用於測試使用
+        '''
+        if element == 'checkbox':
+            return self.db.find_data({"task_date": date, "checkbox_ObjectName": objectName})
+        elif element == 'content':
+            return self.db.find_data({"task_date": date, "content_ObjectName": objectName})
+
+        raise ValueError("objectName 不在資料庫內部")
+
+    def update_content(self, query: List[Dict], new_data):
+        '''
+        update_content(query, new_data): 更新資料庫的內容
+        '''
+        return self.db.update_data(query={"$and": query}, new_data=new_data)
 
 
 class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
@@ -202,10 +220,39 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
     def _handle_content_events(self):
         '''
         _handle_content_events(self): 處理 content 區塊中的事件。例如：更新 TextEdit 內容、CheckBox 狀態等
-        註：需要連結 db，一旦內容變動即時與 db 做更新資訊的操作
+        註：一旦內容變動即時與 db 做更新資訊的操作
         '''
         event_object_name = self.sender().objectName()
-        print(event_object_name)
+        object_info = event_object_name.split('-')
+        _, object_type, object_element = object_info[0], object_info[1], object_info[2]
+
+        # - End. -
+
+        # - 更新資料庫內容 -
+        query: List[Dict] = [
+            {"task_date": self.format_date(), "type": object_type}
+        ]
+
+        if object_element == 'checkbox':
+            query.append(
+                {"checkbox_ObjectName": event_object_name})
+
+            # 取得觸發事件元件的狀態
+            checkbox = self.findChild(QCheckBox, event_object_name)
+            self.update_content(query=query, new_data={
+                                "checked": checkbox.isChecked()})
+
+        elif object_element == 'content':
+            query.append({"content_ObjectName": event_object_name})
+
+            # 取得觸發事件元件的狀態
+            text_edit = self.findChild(QTextEdit, event_object_name)
+            self.update_content(query=query, new_data={
+                                "content_text": text_edit.toPlainText()})
+
+        else:
+            raise ValueError('Object 類型不正確')
+        # - End. -
         pass
 
     def _update_content_section(self):
@@ -213,14 +260,13 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         _update_content_section(self): 更新內容文字區塊的元件
         註：需要清空 content_widget 元件的內容
         '''
-
         # - 清空布局 -
         self.content_widget = QWidget()
         self.v1_layout = QVBoxLayout(self.content_widget)
         # - End. -
 
         # 取得當日的 Notion 資料
-        datas, flag = self.get_data(self.format_date()), self.flag
+        datas, flag = self.get_task_data(self.format_date()), self.flag
         self.last_edited_time_label.setText(
             f"最後更新時間:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
 
@@ -229,14 +275,14 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             if data['type'] == 'to_do':
                 if not flag:
                     # - 提供資料庫資訊，用於 CRUD -
-                    data["checkbox_ObjectName"] = f'{index}-checkbox'
+                    data["checkbox_ObjectName"] = f'{index}-to_do-checkbox'
                     data["content_ObjectName"] = f'{index}-to_do-content'
                     # - End. -
 
                 to_do_layout = QHBoxLayout()
                 checkbox = QCheckBox()
                 checkbox.setChecked(data['checked'])
-                checkbox.setObjectName(f'{index}-checkbox')
+                checkbox.setObjectName(f'{index}-to_do-checkbox')
 
                 content = QTextEdit()
                 content.setText(data['content_text'])
