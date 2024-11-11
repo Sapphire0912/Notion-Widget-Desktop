@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QMessageBox, QWidget, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox, QScrollArea, QTextEdit
 from PyQt5.QtCore import Qt, QSize
 from PyQt5.QtGui import QIcon, QFont
 from ApiRequest import PageOperator
@@ -185,6 +185,39 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         self._windows_setting()
         self.ui()
 
+    def _show_message_box(self, name: str):
+        '''
+        _show_message_box(self, name: str): 當使用者點選"更新"或"上傳"按鈕時的確認視窗
+        '''
+        message_box = QMessageBox()
+        message_box.setWindowTitle('提醒訊息')
+        message_box.setWindowFlags(
+            message_box.windowFlags() | Qt.WindowStaysOnTopHint)
+        message_box.setWindowIcon(QIcon(self._handle_icon_path('task.ico')))
+
+        if name == 'update':
+            message_box.setText('是否確定將 Notion 資料同步至本機資料庫')
+
+        elif name == 'submit':
+            message_box.setText('是否確定將本機資料庫的資料上傳至 Notion 並同步')
+
+        message_box.setIcon(QMessageBox.Information)
+        btn_ok = message_box.addButton('確認', QMessageBox.AcceptRole)
+        btn_cancel = message_box.addButton('取消', QMessageBox.RejectRole)
+
+        message_box.exec_()
+
+        if message_box.clickedButton() == btn_ok:
+            if name == "update":
+                self.synchronous_notion_to_db_data()
+            elif name == "submit":
+                self.upload_data_db_to_notion()
+
+            print('確認操作')
+        elif message_box.clickedButton() == btn_cancel:
+            print('取消操作')
+            pass
+
     def _handle_btn_events(self):
         '''
         _handle_btn_events(self): 處理按鈕功能觸發時，引導相應的處理函式
@@ -201,12 +234,10 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             self.next_day()
 
         if btn_object_name == 'update':
-            # 將 Notion 資料更新至 Database
-            self.synchronous_notion_to_db_data()
+            self._show_message_box(name='update')
 
         if btn_object_name == 'submit':
-            # 將 Database 資料傳送至 Notion
-            self.upload_data_db_to_notion()
+            self._show_message_box(name='submit')
 
         if btn_object_name == 'bullet-list':
             # 建立 bullet-list 元件 (MongoDB)
