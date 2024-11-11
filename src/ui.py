@@ -21,7 +21,8 @@ class DatePicker(object):
 
     def __init__(self, current: date = None):
         self.current: date = current if current else datetime.today()
-        self.last_edited_time: date = datetime.now()   # 要對應 API & DB 的格式
+        self.last_edited_time: str = datetime.now().strftime(
+            '%Y-%m-%d %H:%M:%S')   # 要對應 API & DB 的格式
 
     def format_date(self) -> str:
         '''
@@ -64,18 +65,6 @@ class HandleAPIandDB(object):
         回傳共插入了幾筆資料至資料庫，int
         '''
         return len(self.db.insert_data(data=data).inserted_ids)
-
-    def get_content_event_data(self, element: str, objectName: str, date: str):
-        '''
-        get_content_event_data(self, element: str, objectName: str, date: str): 回傳觸發事件的資料
-        註：用於測試使用
-        '''
-        if element == 'checkbox':
-            return self.db.find_data({"task_date": date, "checkbox_ObjectName": objectName})
-        elif element == 'content':
-            return self.db.find_data({"task_date": date, "content_ObjectName": objectName})
-
-        raise ValueError("objectName 不在資料庫內部")
 
     def update_content(self, query: List[Dict], new_data):
         '''
@@ -226,12 +215,11 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         object_info = event_object_name.split('-')
         _, object_type, object_element = object_info[0], object_info[1], object_info[2]
 
-        # - End. -
-
         # - 更新資料庫內容 -
         query: List[Dict] = [
             {"task_date": self.format_date(), "type": object_type}
         ]
+        last_edited_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         if object_element == 'checkbox':
             query.append(
@@ -240,7 +228,9 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             # 取得觸發事件元件的狀態
             checkbox = self.findChild(QCheckBox, event_object_name)
             self.update_content(query=query, new_data={
-                                "checked": checkbox.isChecked()})
+                                "checked": checkbox.isChecked(),
+                                "last_edited_time": last_edited_time
+                                })
 
         elif object_element == 'content':
             query.append({"content_ObjectName": event_object_name})
@@ -248,7 +238,9 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             # 取得觸發事件元件的狀態
             text_edit = self.findChild(QTextEdit, event_object_name)
             self.update_content(query=query, new_data={
-                                "content_text": text_edit.toPlainText()})
+                                "content_text": text_edit.toPlainText(),
+                                "last_edited_time": last_edited_time
+                                })
 
         else:
             raise ValueError('Object 類型不正確')
