@@ -240,6 +240,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
         if btn_object_name == 'bullet-list':
             # 建立 bullet-list 元件 (MongoDB)
+
             pass
 
         if btn_object_name == 'to-do':
