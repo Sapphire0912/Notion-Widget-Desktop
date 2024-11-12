@@ -46,6 +46,7 @@ class HandleAPIandDB(object):
         self.db = DBOperation()
         self.flag: bool = True  # 是否為資料庫的資料，True 為是，False 為 API 的資料
         self.data: List[Dict] = None
+        self.page_id: str = None  # 當前頁面的 page_id, 相當於創建 block 時的 parent page_id
 
     def get_task_data(self, date: str) -> List[Dict]:
         '''
@@ -54,7 +55,10 @@ class HandleAPIandDB(object):
         datas: List[Dict] = self.db.find_data({"task_date": date})
         if len(datas) == 0:
             self.flag: bool = False
-            datas = PageOperator(currentDate=date).get_page_contents()
+            page_operator = PageOperator(currentDate=date)
+            datas = page_operator.get_page_contents()
+            self.page_id = page_operator.current_page_id
+
         else:
             self.flag: bool = True
 
@@ -64,8 +68,8 @@ class HandleAPIandDB(object):
     def create_db_data(self, data: List[Dict]):
         '''
         create_db_data(self, data: List[Dict]): 若資料庫不存在資料，則需要在創建 PyQt5 元件的時候將 ObjectName 也新增至 DB 做儲存
-        回傳共插入了幾筆資料至資料庫，int
         '''
+        # 此處需要判斷，哪些是需要新增的資料 (創建 items 功能需要)
         self.db.insert_data(data=data)
 
     def update_content(self, query: List[Dict], new_data):
@@ -270,9 +274,9 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             'next': self.next_day,
             'update': lambda: self._show_message_box(name='update'),
             'submit': lambda: self._show_message_box(name='submit'),
-            'bullet-list': None,
-            'to-do': None,
-            'P': None
+            'bullet-list': lambda: self._create_bullet_list(date=self.format_date()),
+            'to-do': lambda: self._create_to_do(date=self.format_date()),
+            'P': lambda: self._create_paragraph(date=self.format_date())
         }
 
         if btn_object_name in key_functions:
@@ -332,6 +336,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
         # 取得當日的 Notion 資料
         datas, flag = self.get_task_data(self.format_date()), self.flag
+        is_add_new_items: bool = False  # 額外新增的資料要放入 Pyqt5 的元件中
         self.last_edited_time_label.setText(
             f"Notion 最後更新:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
 
@@ -342,9 +347,16 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         for index, data in enumerate(datas):
             if data['type'] == 'to_do':
                 if not flag:
-                    # - 提供資料庫資訊，用於 CRUD -
+                    # - 用於從 API 提取資料時，需要提供資料庫資訊，用於 CRUD -
                     data["checkbox_ObjectName"] = f'{index}-to_do-checkbox'
                     data["content_ObjectName"] = f'{index}-to_do-content'
+                    # - End. -
+
+                if not 'content_ObjectName':
+                    # - 表示透過 Pyqt5 新增元件 -
+                    data["checkbox_ObjectName"] = f'{index}-to_do-checkbox'
+                    data["content_ObjectName"] = f'{index}-to_do-content'
+                    is_add_new_items = True
                     # - End. -
 
                 to_do_layout = QHBoxLayout()
@@ -374,9 +386,15 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
             if data['type'] == 'paragraph':
                 if not flag:
-                    # - 提供資料庫資訊，用於 CRUD -
+                    # - 用於從 API 提取資料時，需要提供資料庫資訊，用於 CRUD -
                     data["content_ObjectName"] = f'{
                         index}-paragraph-content'
+                    # - End. -
+
+                if not 'content_ObjectName':
+                    # - 表示透過 Pyqt5 新增元件 -
+                    data["content_ObjectName"] = f'{index}-paragraph-content'
+                    is_add_new_items = True
                     # - End. -
 
                 content = QTextEdit()
@@ -398,10 +416,18 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
             if data['type'] == 'bulleted_list_item':
                 if not flag:
-                    # - 提供資料庫資訊，用於 CRUD -
+                    # - 用於從 API 提取資料時，需要提供資料庫資訊，用於 CRUD -
                     data["label_ObjectName"] = f'{index}-bulleted_list-label'
                     data["content_ObjectName"] = f'{
                         index}-bulleted_list-content'
+                    # - End. -
+
+                if not 'content_ObjectName':
+                    # - 表示透過 Pyqt5 新增元件 -
+                    data["label_ObjectName"] = f'{index}-bulleted_list-label'
+                    data["content_ObjectName"] = f'{
+                        index}-bulleted_list-content'
+                    is_add_new_items = True
                     # - End. -
 
                 bulleted_list_layout = QHBoxLayout()
@@ -429,22 +455,29 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         if not flag:
             self.create_db_data(data=datas)
 
+        if is_add_new_items:
+            # 可以刪除資料庫的資料再重新新增，也可以使用 update 來更新創建元件的資料
+            pass
+
     def _create_bullet_list(self, date: str):
         '''
         _create_bullet_list(self, date: str): 用於創建 Notion 中 bullet-list 物件
         '''
+        # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
         pass
 
     def _create_to_do(self, date: str):
         '''
         _create_to_do(self, date: str): 用於創建 Notion 中 to-do 物件
         '''
+        # 所需資料: parent, task_date, last_edited_time, type, checked(False), content_text(必要)
         pass
 
     def _create_paragraph(self, date: str):
         '''
         _create_paragraph(self, date: str): 用於創建 Notion 中 paragraph 物件
         '''
+        # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
         pass
 
     def ui(self):

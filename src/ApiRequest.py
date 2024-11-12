@@ -51,6 +51,7 @@ class PageOperator(RequestNotionDatabase):
         # 僅 100 筆以內的資料
         self.data: List[Dict] = super().get_database_json().get('results', [])
         self.pageObject: Dict = self._analyze_pages()
+        self.current_page_id: str = None
         self.currentDate: str = currentDate if currentDate else str(
             datetime.today().date())
 
@@ -83,6 +84,7 @@ class PageOperator(RequestNotionDatabase):
         '''
         page_id: str = self.pageObject[self.currentDate]["page_id"]
         url: str = f'https://api.notion.com/v1/blocks/{page_id}/children'
+        self.current_page_id = page_id
 
         # 僅 100 筆以內的資料
         response = requests.get(url=url, headers=self.header)
