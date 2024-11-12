@@ -312,7 +312,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-to_do-content')
-                content.setFixedHeight(24)
+                content.setFixedHeight(30)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -339,7 +339,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-paragraph-content')
-                content.setFixedHeight(24)
+                content.setFixedHeight(30)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -368,7 +368,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-bulleted_list-content')
-                content.setFixedHeight(24)
+                content.setFixedHeight(30)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);

@@ -93,6 +93,7 @@ class PageOperator(RequestNotionDatabase):
         get_page_contents(self): 取得 page 的文字內容(如: text, to-do 等)
 
         回傳資訊的 Dict 包含:
+        id: block 在 Notion 中的 id
         parent: Notion 中父容器的 id 與類型
         task_date: 當前日期 self.currentDate
         last_edited_time: Notion 中最後編輯時間
@@ -105,6 +106,7 @@ class PageOperator(RequestNotionDatabase):
         content_list: List[Dict] = list()
         for block in data:
             content_info: Dict = {
+                "id": block["id"],
                 "parent": block["parent"],
                 "task_date": self.currentDate,
                 "last_edited_time": self.pageObject[self.currentDate]["last_edited_time"],
@@ -131,6 +133,10 @@ class PageOperator(RequestNotionDatabase):
         '''
         page_id: str = self.pageObject[self.currentDate]["page_id"]
         url: str = f'https://api.notion.com/v1/blocks/{page_id}'
+
+        data = {
+            "children": data,
+        }
 
         response = requests.patch(url=url, headers=self.header, json=data)
         return response.status_code
