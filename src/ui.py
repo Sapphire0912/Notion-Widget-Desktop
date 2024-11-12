@@ -429,6 +429,24 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         if not flag:
             self.create_db_data(data=datas)
 
+    def _create_bullet_list(self, date: str):
+        '''
+        _create_bullet_list(self, date: str): 用於創建 Notion 中 bullet-list 物件
+        '''
+        pass
+
+    def _create_to_do(self, date: str):
+        '''
+        _create_to_do(self, date: str): 用於創建 Notion 中 to-do 物件
+        '''
+        pass
+
+    def _create_paragraph(self, date: str):
+        '''
+        _create_paragraph(self, date: str): 用於創建 Notion 中 paragraph 物件
+        '''
+        pass
+
     def ui(self):
         '''
         ui(self): 設定視窗的基本功能元件
