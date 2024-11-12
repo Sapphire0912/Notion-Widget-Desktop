@@ -126,19 +126,39 @@ class PageOperator(RequestNotionDatabase):
 
         return content_list
 
-    def patch_page_data(self, data: Dict) -> int:
+    def upload_page_data(self, data: List) -> int:
         '''
-        patch_page_data(self, data: Dict): 向 Notion 傳送需要更新的資料, 回應 response code
+        upload_page_data(self, data: List): 向 Notion 傳送需要更新的資料, 回應 response code
         註：data 必須符合 Notion API 的文件格式
+        註2：先刪除 page 內的所有物件再進行創建新的 block 動作
         '''
         page_id: str = self.pageObject[self.currentDate]["page_id"]
-        url: str = f'https://api.notion.com/v1/blocks/{page_id}'
+        url: str = f'https://api.notion.com/v1/blocks/{page_id}/children'
 
-        data = {
+        # - 刪除 Notion 上舊有的資料 -
+        response = requests.get(url=url, headers=self.header)
+        old_blocks = response.json().get("results", [])
+
+        for block in old_blocks:
+            block_id = block["id"]
+            delete_url = f'https://api.notion.com/v1/blocks/{block_id}'
+            delete_response = requests.delete(delete_url, headers=self.header)
+
+            if delete_response.status_code != 200:
+                raise SystemError("更新物件失敗，請稍後再執行")
+        # - End. -
+
+        # 進行更新(創建)物件動作
+        payload = {
             "children": data,
         }
 
-        response = requests.patch(url=url, headers=self.header, json=data)
+        response = requests.patch(
+            url=url, headers=self.header, json=payload)
+
+        if response.status_code != 200:
+            raise SystemError("更新物件失敗，請稍後再執行")
+
         return response.status_code
 
 # page_obj = PageOperator()

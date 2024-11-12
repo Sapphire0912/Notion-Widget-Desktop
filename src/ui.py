@@ -61,18 +61,18 @@ class HandleAPIandDB(object):
         self.data = datas
         return datas
 
-    def create_db_data(self, data: List[Dict]) -> int:
+    def create_db_data(self, data: List[Dict]):
         '''
         create_db_data(self, data: List[Dict]): 若資料庫不存在資料，則需要在創建 PyQt5 元件的時候將 ObjectName 也新增至 DB 做儲存
         回傳共插入了幾筆資料至資料庫，int
         '''
-        return len(self.db.insert_data(data=data).inserted_ids)
+        self.db.insert_data(data=data)
 
     def update_content(self, query: List[Dict], new_data):
         '''
         update_content(query, new_data): 更新資料庫的內容
         '''
-        return self.db.update_data(query={"$and": query}, new_data=new_data)
+        self.db.update_data(query={"$and": query}, new_data=new_data)
 
     def synchronous_notion_to_db_data(self, date: str):
         '''
@@ -81,11 +81,50 @@ class HandleAPIandDB(object):
         '''
         self.db.delete_data({"task_date": date})
 
-    def upload_data_db_to_notion(self):
+    def upload_data_db_to_notion(self, date: str):
         '''
-        upload_data_db_to_notion(self): 將 Database 資料更新至 Notion
+        upload_data_db_to_notion(self, date: str): 將 Database 資料更新至 Notion
         '''
-        pass
+        target = self.db.find_data({"task_date": date})
+
+        # 將 MongoDB 的資料轉成 Notion API 格式
+        notion_blocks: List[Dict] = list()
+        for data in target:
+            notion_type: str = data["type"]
+            block = {
+                "object": "block",
+                "type": notion_type,
+            }
+
+            if notion_type == "to_do":
+                block[notion_type] = {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": data["content_text"],
+                                "link": None
+                            }
+                        }
+                    ],
+                    "checked": data.get("checked", False)
+                }
+            else:
+                block[notion_type] = {
+                    "rich_text": [
+                        {
+                            "type": "text",
+                            "text": {
+                                "content": data["content_text"],
+                                "link": None
+                            }
+                        }
+                    ]
+                }
+            notion_blocks.append(block)
+
+        # 呼叫 API
+        PageOperator(currentDate=date).upload_page_data(data=notion_blocks)
 
 
 class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
@@ -208,11 +247,12 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         if message_box.clickedButton() == btn_ok:
             if name == "update":
                 self.synchronous_notion_to_db_data(self.format_date())
-                # 重新渲染 UI
-                self._update_content_section()
 
             elif name == "submit":
                 self.upload_data_db_to_notion(self.format_date())
+
+            # 重新渲染 UI
+            self._update_content_section()
 
         elif message_box.clickedButton() == btn_cancel:
             pass
@@ -296,6 +336,9 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
             f"Notion 最後更新:\n{datas[0]["last_edited_time"]}")  # 顯示最後更新時間
 
         # index 提供給 self.sender 接收具體是更改哪個元件
+        # 過濾沒有 content_text 欄位的資料
+        datas = [data for data in datas if 'content_text' in data]
+
         for index, data in enumerate(datas):
             if data['type'] == 'to_do':
                 if not flag:
@@ -312,7 +355,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-to_do-content')
-                content.setFixedHeight(30)
+                content.setFixedHeight(25)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -329,7 +372,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 to_do_layout.addWidget(content)
                 self.v1_layout.addLayout(to_do_layout)
 
-            if data['type'] == 'paragraph' and 'content_text' in data.keys():
+            if data['type'] == 'paragraph':
                 if not flag:
                     # - 提供資料庫資訊，用於 CRUD -
                     data["content_ObjectName"] = f'{
@@ -339,7 +382,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-paragraph-content')
-                content.setFixedHeight(30)
+                content.setFixedHeight(25)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
@@ -368,7 +411,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                 content = QTextEdit()
                 content.setText(data['content_text'])
                 content.setObjectName(f'{index}-bulleted_list-content')
-                content.setFixedHeight(30)
+                content.setFixedHeight(25)
                 content.setStyleSheet("""
                 QTextEdit {
                     background-color: rgba(255, 255, 255, 0);
