@@ -5,6 +5,7 @@ from ApiRequest import PageOperator
 from ConnectDB import DBOperation
 from datetime import date, datetime, timedelta
 from typing import Dict, List
+import time
 import sys
 import os
 
@@ -45,6 +46,7 @@ class HandleAPIandDB(object):
     def __init__(self):
         self.db = DBOperation()
         self.flag: bool = True  # 是否為資料庫的資料，True 為是，False 為 API 的資料
+
         self.data: List[Dict] = None
         self.page_id: str = None  # 當前頁面的 page_id, 相當於創建 block 時的 parent page_id
 
@@ -60,6 +62,7 @@ class HandleAPIandDB(object):
             self.page_id = page_operator.current_page_id
 
         else:
+            self.page_id = datas[0]["parent"]["page_id"]
             self.flag: bool = True
 
         self.data = datas
@@ -69,7 +72,6 @@ class HandleAPIandDB(object):
         '''
         create_db_data(self, data: List[Dict]): 若資料庫不存在資料，則需要在創建 PyQt5 元件的時候將 ObjectName 也新增至 DB 做儲存
         '''
-        # 此處需要判斷，哪些是需要新增的資料 (創建 items 功能需要)
         self.db.insert_data(data=data)
 
     def update_content(self, query: List[Dict], new_data):
@@ -129,6 +131,12 @@ class HandleAPIandDB(object):
 
         # 呼叫 API
         PageOperator(currentDate=date).upload_page_data(data=notion_blocks)
+
+    def delete_db_data(self, date: str):
+        '''
+        delete_db_data(self, date: str): 刪除 date 的 db 資料
+        '''
+        self.db.delete_data({"task_date": date})
 
 
 class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
@@ -352,7 +360,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                     data["content_ObjectName"] = f'{index}-to_do-content'
                     # - End. -
 
-                if not 'content_ObjectName':
+                elif 'content_ObjectName' not in data.keys():
                     # - 表示透過 Pyqt5 新增元件 -
                     data["checkbox_ObjectName"] = f'{index}-to_do-checkbox'
                     data["content_ObjectName"] = f'{index}-to_do-content'
@@ -391,7 +399,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                         index}-paragraph-content'
                     # - End. -
 
-                if not 'content_ObjectName':
+                elif 'content_ObjectName' not in data.keys():
                     # - 表示透過 Pyqt5 新增元件 -
                     data["content_ObjectName"] = f'{index}-paragraph-content'
                     is_add_new_items = True
@@ -414,7 +422,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
                 self.v1_layout.addWidget(content)
 
-            if data['type'] == 'bulleted_list_item':
+            if data['type'] == 'bulleted_list':
                 if not flag:
                     # - 用於從 API 提取資料時，需要提供資料庫資訊，用於 CRUD -
                     data["label_ObjectName"] = f'{index}-bulleted_list-label'
@@ -422,7 +430,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
                         index}-bulleted_list-content'
                     # - End. -
 
-                if not 'content_ObjectName':
+                elif 'content_ObjectName' not in data.keys():
                     # - 表示透過 Pyqt5 新增元件 -
                     data["label_ObjectName"] = f'{index}-bulleted_list-label'
                     data["content_ObjectName"] = f'{
@@ -455,30 +463,58 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         if not flag:
             self.create_db_data(data=datas)
 
-        if is_add_new_items:
-            # 可以刪除資料庫的資料再重新新增，也可以使用 update 來更新創建元件的資料
-            pass
+        elif is_add_new_items:
+            self.delete_db_data(date=self.format_date())
+            self.create_db_data(data=datas)
 
     def _create_bullet_list(self, date: str):
         '''
         _create_bullet_list(self, date: str): 用於創建 Notion 中 bullet-list 物件
         '''
         # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
-        pass
+        create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
+        new_item = {
+            'parent': {"type": "page_id", "page_id": self.page_id},
+            'task_date': date,
+            'last_edited_time': create_time,
+            "type": "bulleted_list",
+            "content_text": "",
+        }
+        self.create_db_data(data=[new_item])
+        self._update_content_section()  # 重新渲染 UI
 
     def _create_to_do(self, date: str):
         '''
         _create_to_do(self, date: str): 用於創建 Notion 中 to-do 物件
         '''
         # 所需資料: parent, task_date, last_edited_time, type, checked(False), content_text(必要)
-        pass
+        create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
+        new_item = {
+            'parent': {"type": "page_id", "page_id": self.page_id},
+            'task_date': date,
+            'last_edited_time': create_time,
+            "type": "to_do",
+            "checked": False,
+            "content_text": "",
+        }
+        self.create_db_data(data=[new_item])
+        self._update_content_section()  # 重新渲染 UI
 
     def _create_paragraph(self, date: str):
         '''
         _create_paragraph(self, date: str): 用於創建 Notion 中 paragraph 物件
         '''
         # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
-        pass
+        create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
+        new_item = {
+            'parent': {"type": "page_id", "page_id": self.page_id},
+            'task_date': date,
+            'last_edited_time': create_time,
+            "type": "paragraph",
+            "content_text": "",
+        }
+        self.create_db_data(data=[new_item])
+        self._update_content_section()  # 重新渲染 UI
 
     def ui(self):
         '''

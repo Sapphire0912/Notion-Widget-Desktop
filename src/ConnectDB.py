@@ -49,7 +49,7 @@ class DBOperation(object):
 
     def delete_data(self, query):
         '''
-        update_data(self, query): 刪除符合查詢條件的資料，回傳 delete_count
+        delete_data(self, query): 刪除符合查詢條件的資料，回傳 delete_count
         '''
         delete_result = self.collection.delete_many(query)
         return delete_result.deleted_count
