@@ -323,6 +323,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
             # 取得觸發事件元件的狀態
             text_edit = self.findChild(QTextEdit, event_object_name)
+            print(query)
             self.update_content(query=query, new_data={
                                 "content_text": text_edit.toPlainText(),
                                 "last_edited_time": last_edited_time
@@ -422,29 +423,31 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
                 self.v1_layout.addWidget(content)
 
-            if data['type'] == 'bulleted_list':
+            if data['type'] == 'bulleted_list_item':
                 if not flag:
                     # - 用於從 API 提取資料時，需要提供資料庫資訊，用於 CRUD -
-                    data["label_ObjectName"] = f'{index}-bulleted_list-label'
+                    data["label_ObjectName"] = f'{
+                        index}-bulleted_list_item-label'
                     data["content_ObjectName"] = f'{
-                        index}-bulleted_list-content'
+                        index}-bulleted_list_item-content'
                     # - End. -
 
                 elif 'content_ObjectName' not in data.keys():
                     # - 表示透過 Pyqt5 新增元件 -
-                    data["label_ObjectName"] = f'{index}-bulleted_list-label'
+                    data["label_ObjectName"] = f'{
+                        index}-bulleted_list_item-label'
                     data["content_ObjectName"] = f'{
-                        index}-bulleted_list-content'
+                        index}-bulleted_list_item-content'
                     is_add_new_items = True
                     # - End. -
 
                 bulleted_list_layout = QHBoxLayout()
                 label = QLabel('•')
-                label.setObjectName(f'{index}-bulleted_list-label')
+                label.setObjectName(f'{index}-bulleted_list_item-label')
 
                 content = QTextEdit()
                 content.setText(data['content_text'])
-                content.setObjectName(f'{index}-bulleted_list-content')
+                content.setObjectName(f'{index}-bulleted_list_item-content')
                 content.setFixedHeight(25)
                 content.setStyleSheet("""
                 QTextEdit {
@@ -474,10 +477,11 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
         create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
         new_item = {
+            "id": self.page_id,
             'parent': {"type": "page_id", "page_id": self.page_id},
             'task_date': date,
             'last_edited_time': create_time,
-            "type": "bulleted_list",
+            "type": "bulleted_list_item",
             "content_text": "",
         }
         self.create_db_data(data=[new_item])
@@ -490,6 +494,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         # 所需資料: parent, task_date, last_edited_time, type, checked(False), content_text(必要)
         create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
         new_item = {
+            "id": self.page_id,
             'parent': {"type": "page_id", "page_id": self.page_id},
             'task_date': date,
             'last_edited_time': create_time,
@@ -507,6 +512,7 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
         # 所需資料: parent, task_date, last_edited_time, type, content_text(必要)
         create_time = datetime.now().strftime('%y-%m-%d %H:%M:%S')
         new_item = {
+            "id": self.page_id,
             'parent': {"type": "page_id", "page_id": self.page_id},
             'task_date': date,
             'last_edited_time': create_time,
