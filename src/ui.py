@@ -323,7 +323,6 @@ class DesktopWidget(QMainWindow, DatePicker, HandleAPIandDB):
 
             # 取得觸發事件元件的狀態
             text_edit = self.findChild(QTextEdit, event_object_name)
-            print(query)
             self.update_content(query=query, new_data={
                                 "content_text": text_edit.toPlainText(),
                                 "last_edited_time": last_edited_time
